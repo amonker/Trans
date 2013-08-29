@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?>
+	<project name="Trans" default="do-deploy" basedir="."  xmlns:fx="javafx:com.sun.javafx.tools.ant">
+	<target name="init-fx-tasks">
+		<path id="fxant">
+			<filelist>
+				<file name="${java.home}\..\lib\ant-javafx.jar"/>
+				<file name="${java.home}\lib\jfxrt.jar"/>
+				<file name="${basedir}"/>
+			</filelist>
+		</path>
+	
+		<taskdef resource="com/sun/javafx/tools/ant/antlib.xml"      
+			uri="javafx:com.sun.javafx.tools.ant"
+			classpathref="fxant"/>
+	</target>
+	<target name="setup-staging-area">
+		<delete dir="externalLibs" />
+		<delete dir="project" />
+		<delete dir="projectRefs" />
+		
+		<mkdir dir="externalLibs" />
+		
+		<copy todir="externalLibs">
+			<fileset dir="..">
+				<filename name="sqlite-jdbc-3.7.2.jar"/>	
+			</fileset>
+		</copy>
+		
+		<copy todir="externalLibs">
+			<fileset dir="..">
+				<filename name="javafx-dialogs-0.0.3.jar"/>	
+			</fileset>
+		</copy>
+		
+		<copy todir="externalLibs">
+			<fileset dir="..">
+				<filename name="AmonkerFX.jar"/>	
+			</fileset>
+		</copy>
+		
+		<mkdir dir="project" />
+		<copy todir="project">
+			<fileset dir="..">
+				<include name="src/**" />
+			</fileset>
+		</copy>
+		
+		<mkdir dir="projectRefs" />
+	</target>
+	<target name='do-compile'>
+		<delete dir="build" />
+		<mkdir dir="build/src" />
+		<mkdir dir="build/libs" />
+		<mkdir dir="build/classes" />
+	
+		<!-- Copy project-libs references -->
+		<copy todir="build/libs">
+			<fileset dir="externalLibs">
+				<include name="sqlite-jdbc-3.7.2.jar"/>
+				<include name="javafx-dialogs-0.0.3.jar"/>
+				<include name="AmonkerFX.jar"/>
+			</fileset>
+		</copy>
+	
+		<!-- Copy project references -->
+	
+		<!-- Copy project sources itself -->
+		<copy todir="build/src">
+			<fileset dir="project/src">
+				<include name="**/*"/>
+			</fileset>
+		</copy>
+	
+		<javac includeantruntime="false" source="1.7" target="1.7" srcdir="build/src" destdir="build/classes" encoding="UTF-8">
+			<classpath>
+				<fileset dir="build/libs">
+					<include name="*"/>
+				</fileset>
+				<filelist>
+					<file name="C:\Program Files\Java\jdk1.7.0_17\jre\lib\jfxrt.jar"/>
+				</filelist>
+			</classpath>
+		</javac>
+		
+		<!-- Copy over none Java-Files -->
+		<copy todir="build/classes">
+		<fileset dir="project/src">
+			<exclude name="**/*.java"/>
+		</fileset>
+		</copy>
+	
+	
+	</target>
+	<target name="do-deploy" depends="setup-staging-area, do-compile, init-fx-tasks">
+		<delete file="dist"/>
+		<delete file="deploy" />
+		
+		<mkdir dir="dist" />
+		<mkdir dir="dist/libs" />
+		<mkdir dir="dist/resources"/>
+		<mkdir dir="dist/tools"/>
+		<mkdir dir="package"/>
+		
+		<copy todir="dist/libs">
+			<fileset dir="externalLibs">
+				<include name="*" />
+			</fileset>
+		</copy>
+		
+		<copy todir="dist/resources">
+			<fileset dir="../resources"/>
+		</copy>
+		
+		<mkdir dir="package/windows"/>
+		<copy todir="package/windows">
+			<fileset dir="package/windows">
+				<include name="Trans.ico"/>
+				<include name="Trans-setup-icon.png"/>
+			</fileset>
+		</copy>
+		
+		<copy todir="dist/tools">
+			<fileset dir="package/windows">
+				<include name="ffmpeg.exe"/>
+			</fileset>
+		</copy>
+		
+		<fx:resources id="appRes">
+			<fx:fileset dir="dist" includes="Trans.jar"/>
+			<fx:fileset dir="dist" includes="libs/*"/>
+			<fx:fileset dir="dist" includes="resouces/**"/>
+			<fx:fileset dir="dist" includes="tools/**"/>
+		</fx:resources> 
+		
+		<fx:application id="fxApplication"
+			name="Trans"
+			mainClass="cn.jingyun.trans.Trans"
+			toolkit="fx"
+		/>
+	
+		<mkdir dir="build/classes/META-INF" />
+		
+		
+		
+		<fx:jar destfile="dist/Trans.jar">
+			<fx:application refid="fxApplication"/>
+			<fileset dir="build/classes">
+			</fileset>
+			<fx:resources refid="appRes"/>
+			
+			<manifest>
+				<attribute name="Implementation-Vendor" value="Trans Media"/>
+				<attribute name="Implementation-Title" value=""/>
+				<attribute name="Implementation-Version" value="1.0a"/>
+			</manifest>
+		</fx:jar>
+		
+	
+		<mkdir dir="deploy" />
+		<!-- Need to use ${basedir} because somehow the ant task is calculating the directory differently -->
+		<fx:deploy
+			embedJNLP="false"
+			extension="false"
+			includeDT="false"
+			offlineAllowed="true"
+			outdir="${basedir}/deploy"
+			outfile="Trans" nativeBundles="exe"
+			updatemode="background" >
+	
+			<fx:info title="Trans" vendor="Trans Media" copyright="Jingyun">
+				<fx:icon href="package/windows/Trans.ico"/>
+			</fx:info>
+			<fx:application refId="fxApplication"/>
+			<fx:resources refid="appRes"/>
+		</fx:deploy>
+		
+		
+	</target>
+</project>
